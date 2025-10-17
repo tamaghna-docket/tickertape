@@ -377,6 +377,88 @@ async def get_monitor_signals(job_id: str):
     return MonitorResult(**result)
 
 
+@app.get("/api/signals/{saas_client_name}")
+async def get_signals_from_db(saas_client_name: str):
+    """Get all intelligence signals directly from database (no job_id needed)"""
+    if not platform_service:
+        raise HTTPException(status_code=500, detail="Platform service not initialized")
+
+    import sqlite3
+
+    # Query database for all intelligence reports for this SaaS client
+    conn = sqlite3.connect(platform_service.platform.db_path)
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT intelligence FROM intelligence
+        WHERE saas_client = ?
+        ORDER BY generated_at DESC
+    ''', (saas_client_name,))
+
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        return {
+            "saas_client": saas_client_name,
+            "signals_found": 0,
+            "signals": []
+        }
+
+    # Parse intelligence reports from JSON
+    signals = []
+    for row in rows:
+        intel_data = json.loads(row[0])
+
+        # Extract signal summary
+        signals.append({
+            "ticker": intel_data.get("enterprise_customer", {}).get("ticker", "N/A"),
+            "company_name": intel_data.get("enterprise_customer", {}).get("company_name", "Unknown"),
+            "signal_type": intel_data.get("signal", {}).get("signal_type", "unknown"),
+            "opportunity_type": intel_data.get("opportunity_type", "unknown"),
+            "urgency_score": intel_data.get("urgency_score", 0.0),
+            "estimated_value": intel_data.get("estimated_opportunity_value", "Unknown"),
+            "generated_at": intel_data.get("generated_at", datetime.now().isoformat())
+        })
+
+    return {
+        "saas_client": saas_client_name,
+        "signals_found": len(signals),
+        "signals": signals
+    }
+
+
+@app.get("/api/intelligence/{ticker}/{saas_client_name}")
+async def get_intelligence_report(ticker: str, saas_client_name: str):
+    """Get the full intelligence report for a specific customer"""
+    if not platform_service:
+        raise HTTPException(status_code=500, detail="Platform service not initialized")
+
+    import sqlite3
+
+    conn = sqlite3.connect(platform_service.platform.db_path)
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT intelligence FROM intelligence
+        WHERE ticker = ? AND saas_client = ?
+        ORDER BY generated_at DESC
+        LIMIT 1
+    ''', (ticker, saas_client_name))
+
+    row = c.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No intelligence report found for {ticker} and {saas_client_name}"
+        )
+
+    # Return the full intelligence data
+    return json.loads(row[0])
+
+
 # ============================================================================
 # WebSocket Endpoint
 # ============================================================================

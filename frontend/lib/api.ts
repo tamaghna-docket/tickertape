@@ -76,6 +76,28 @@ class APIClient {
     return this.request<MonitorResult>(`/api/monitor/${jobId}/signals`);
   }
 
+  // Get signals directly from database (no job_id needed)
+  async getSignalsFromDB(saasClientName: string): Promise<{
+    saas_client: string;
+    signals_found: number;
+    signals: Array<{
+      ticker: string;
+      company_name: string;
+      signal_type: string;
+      opportunity_type: string;
+      urgency_score: number;
+      estimated_value: string;
+      generated_at: string;
+    }>;
+  }> {
+    return this.request(`/api/signals/${saasClientName}`);
+  }
+
+  // Get full intelligence report for a specific ticker and SaaS client
+  async getIntelligenceReport(ticker: string, saasClientName: string): Promise<any> {
+    return this.request(`/api/intelligence/${ticker}/${saasClientName}`);
+  }
+
   // WebSocket URL helper
   getWebSocketURL(jobId: string): string {
     const wsProtocol = this.baseURL.startsWith("https") ? "wss" : "ws";

@@ -17,6 +17,37 @@ export default function MonitorPage() {
   const [error, setError] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [result, setResult] = useState<MonitorResult | null>(null);
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
+  const handleLoadExisting = async () => {
+    if (!companyName) {
+      setError("Please enter a company name");
+      return;
+    }
+
+    setError(null);
+    setLoadingExisting(true);
+
+    try {
+      const data = await api.getSignalsFromDB(companyName);
+
+      // Convert to MonitorResult format
+      setResult({
+        job_id: "from-db",
+        status: "completed" as const,
+        saas_client: data.saas_client,
+        signals_found: data.signals_found,
+        signals: data.signals,
+        completed_at: new Date().toISOString()
+      });
+      setLoadingExisting(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load existing signals"
+      );
+      setLoadingExisting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +160,23 @@ export default function MonitorPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-            >
-              {isSubmitting ? "Starting..." : "Start Monitoring"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              >
+                {isSubmitting ? "Starting..." : "Start Monitoring"}
+              </button>
+              <button
+                type="button"
+                onClick={handleLoadExisting}
+                disabled={loadingExisting || !companyName}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              >
+                {loadingExisting ? "Loading..." : "Load Existing Signals"}
+              </button>
+            </div>
           </form>
         )}
 
@@ -172,7 +213,11 @@ export default function MonitorPage() {
             ) : (
               <div className="grid gap-4">
                 {sortedSignals.map((signal, idx) => (
-                  <SignalCard key={idx} signal={signal} />
+                  <SignalCard
+                    key={idx}
+                    signal={signal}
+                    saasClient={result.saas_client}
+                  />
                 ))}
               </div>
             )}
@@ -183,7 +228,13 @@ export default function MonitorPage() {
   );
 }
 
-function SignalCard({ signal }: { signal: SignalSummary }) {
+function SignalCard({
+  signal,
+  saasClient
+}: {
+  signal: SignalSummary;
+  saasClient: string;
+}) {
   const urgencyLabel = getUrgencyLabel(signal.urgency_score);
   const urgencyColor = getUrgencyColor(signal.urgency_score);
 
@@ -230,7 +281,7 @@ function SignalCard({ signal }: { signal: SignalSummary }) {
         </div>
 
         <a
-          href={`/signals/${signal.ticker}`}
+          href={`/signals/${signal.ticker}?client=${encodeURIComponent(saasClient)}`}
           className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           View Details
