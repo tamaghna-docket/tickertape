@@ -159,7 +159,7 @@ class PlatformService:
                     "opportunity_type": intel.opportunity_type,
                     "urgency_score": intel.urgency_score,
                     "estimated_value": intel.estimated_opportunity_value,
-                    "generated_at": intel.timestamp
+                    "generated_at": intel.generated_at.isoformat() if hasattr(intel.generated_at, 'isoformat') else str(intel.generated_at)
                 })
 
             result = {
