@@ -166,6 +166,27 @@ export default function MonitorPage() {
     showing: filteredAndSortedSignals.length,
   };
 
+  // Get unique tickers from filtered signals for the ticker component
+  const filteredTickers = filteredAndSortedSignals.length > 0
+    ? Array.from(new Set(filteredAndSortedSignals.map(s => s.ticker)))
+    : undefined; // undefined means show all customers
+
+  // Calculate max urgency for each ticker (from filtered signals)
+  const signalUrgencies = result?.signals
+    ? Array.from(
+        result.signals.reduce((acc, signal) => {
+          const existing = acc.get(signal.ticker);
+          if (!existing || signal.urgency_score > existing.maxUrgency) {
+            acc.set(signal.ticker, {
+              ticker: signal.ticker,
+              maxUrgency: signal.urgency_score,
+            });
+          }
+          return acc;
+        }, new Map<string, { ticker: string; maxUrgency: number }>())
+      ).map(([, value]) => value)
+    : undefined;
+
   return (
     <div className="py-6 px-6">
       <div className="mx-auto max-w-full space-y-6">
@@ -255,8 +276,12 @@ export default function MonitorPage() {
 
         {result && (
           <div className="space-y-6">
-            {/* Customer Ticker - Shows customers with intelligence reports */}
-            <CustomerTicker saasClientName={result.saas_client} />
+            {/* Customer Ticker - Shows customers with intelligence reports (filtered) */}
+            <CustomerTicker
+              saasClientName={result.saas_client}
+              filteredTickers={filteredTickers}
+              signalUrgencies={signalUrgencies}
+            />
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-4">

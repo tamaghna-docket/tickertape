@@ -9,13 +9,38 @@ interface Customer {
   industry: string;
 }
 
-interface CustomerTickerProps {
-  saasClientName: string;
+interface SignalUrgency {
+  ticker: string;
+  maxUrgency: number; // Highest urgency score for this ticker
 }
 
-export function CustomerTicker({ saasClientName }: CustomerTickerProps) {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+interface CustomerTickerProps {
+  saasClientName: string;
+  filteredTickers?: string[]; // Optional: if provided, only show these tickers
+  signalUrgencies?: SignalUrgency[]; // Optional: urgency data for each ticker
+}
+
+export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies }: CustomerTickerProps) {
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to get urgency label and color
+  const getUrgencyBadge = (ticker: string) => {
+    if (!signalUrgencies) return null;
+
+    const urgencyData = signalUrgencies.find(u => u.ticker === ticker);
+    if (!urgencyData) return null;
+
+    const score = urgencyData.maxUrgency;
+
+    if (score >= 0.8) {
+      return { label: "HIGH", color: "bg-red-500 text-white" };
+    } else if (score >= 0.6) {
+      return { label: "MED", color: "bg-orange-500 text-white" };
+    } else {
+      return { label: "LOW", color: "bg-blue-500 text-white" };
+    }
+  };
 
   useEffect(() => {
     loadCustomers();
@@ -27,13 +52,18 @@ export function CustomerTicker({ saasClientName }: CustomerTickerProps) {
         `http://localhost:8000/api/customers/${saasClientName}`
       );
       const data = await response.json();
-      setCustomers(data.customers || []);
+      setAllCustomers(data.customers || []);
     } catch (error) {
       console.error("Failed to load customers:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Filter customers based on filteredTickers prop
+  const customers = filteredTickers && filteredTickers.length > 0
+    ? allCustomers.filter(c => filteredTickers.includes(c.ticker))
+    : allCustomers;
 
   if (loading) {
     return (
@@ -52,13 +82,22 @@ export function CustomerTicker({ saasClientName }: CustomerTickerProps) {
   // Duplicate customers array for seamless loop
   const tickerItems = [...customers, ...customers];
 
+  const isFiltered = filteredTickers && filteredTickers.length > 0 && filteredTickers.length < allCustomers.length;
+
   return (
     <div className="relative overflow-hidden border-y border-border bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 py-3">
       {/* Label - Fixed width with clear background */}
       <div className="absolute left-0 top-0 z-20 flex h-full items-center bg-background px-6 pr-8">
-        <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-primary">
-          Customer Ticker
-        </span>
+        <div className="flex flex-col">
+          <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-primary">
+            Customer Ticker
+          </span>
+          {isFiltered && (
+            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+              {customers.length} of {allCustomers.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Gradient fade after label */}
@@ -66,40 +105,49 @@ export function CustomerTicker({ saasClientName }: CustomerTickerProps) {
 
       {/* Scrolling Ticker */}
       <div className="flex animate-ticker space-x-6 pl-60">
-        {tickerItems.map((customer, index) => (
-          <a
-            key={`${customer.ticker}-${index}`}
-            href={`/signals/${customer.ticker}?client=${encodeURIComponent(
-              saasClientName
-            )}`}
-            className="group flex min-w-fit items-center gap-3 rounded-lg border border-border bg-card px-4 py-2 shadow-sm transition-all hover:scale-105 hover:border-primary hover:shadow-md"
-          >
-            {/* Ticker Symbol Badge */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-              {customer.ticker}
-            </div>
+        {tickerItems.map((customer, index) => {
+          const urgencyBadge = getUrgencyBadge(customer.ticker);
 
-            {/* Company Name Only */}
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">
-                {customer.company_name.split("—")[0].trim()}
-              </div>
-            </div>
-
-            {/* Arrow indicator on hover */}
-            <svg
-              className="h-4 w-4 flex-shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          return (
+            <a
+              key={`${customer.ticker}-${index}`}
+              href={`/signals/${customer.ticker}?client=${encodeURIComponent(
+                saasClientName
+              )}`}
+              className="group flex min-w-fit items-center gap-3 rounded-lg border border-border bg-card px-4 py-2 shadow-sm transition-all hover:scale-105 hover:border-primary hover:shadow-md"
             >
-              <path d="M9 5l7 7-7 7"></path>
-            </svg>
-          </a>
-        ))}
+              {/* Ticker Symbol Badge */}
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {customer.ticker}
+              </div>
+
+              {/* Company Name with Urgency Badge */}
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="truncate text-sm font-medium">
+                  {customer.company_name.split("—")[0].trim()}
+                </div>
+                {urgencyBadge && (
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${urgencyBadge.color}`}>
+                    {urgencyBadge.label}
+                  </span>
+                )}
+              </div>
+
+              {/* Arrow indicator on hover */}
+              <svg
+                className="h-4 w-4 flex-shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M9 5l7 7-7 7"></path>
+              </svg>
+            </a>
+          );
+        })}
       </div>
 
       {/* Gradient fade on right */}
