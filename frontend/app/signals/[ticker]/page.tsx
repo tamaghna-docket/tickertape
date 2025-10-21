@@ -138,7 +138,7 @@ export default function SignalDetailsPage() {
     <div className="container py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
-        <div className="space-y-3">
+        <div className="animate-fade-in-up space-y-3" style={{ animationDelay: '0ms' }}>
           <a
             href={backToMonitorUrl()}
             className="inline-block text-sm text-muted-foreground hover:text-primary"
@@ -185,14 +185,14 @@ export default function SignalDetailsPage() {
 
         {/* Signal Summary - Prominent display of what this signal is about */}
         {signal.summary && (
-          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-6">
+          <div className="animate-fade-in-up rounded-lg border-2 border-primary/20 bg-primary/5 p-6" style={{ animationDelay: '100ms' }}>
             <h2 className="mb-3 text-lg font-semibold text-primary">Signal Summary</h2>
             <p className="text-base leading-relaxed">{signal.summary}</p>
           </div>
         )}
 
         {/* Opportunity Summary */}
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '200ms' }}>
           <h2 className="mb-4 text-xl font-semibold">Opportunity Summary</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -222,7 +222,7 @@ export default function SignalDetailsPage() {
 
         {/* Signal Details */}
         {signal.filing_details && (
-          <div className="rounded-lg border border-border bg-card p-6">
+          <div className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '300ms' }}>
             <h2 className="mb-4 text-xl font-semibold">Signal Details</h2>
             <div className="space-y-3">
               {signal.filing_details.filing_date && (
@@ -263,7 +263,7 @@ export default function SignalDetailsPage() {
 
         {/* Signal Implications & Impact */}
         {(intelligence.signal_implications || intelligence.relationship_impact) && (
-          <div className="rounded-lg border border-border bg-card p-6">
+          <div className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '400ms' }}>
             <h2 className="mb-4 text-xl font-semibold">Strategic Analysis</h2>
             <div className="space-y-4">
               {intelligence.signal_implications && (
@@ -288,7 +288,7 @@ export default function SignalDetailsPage() {
 
         {/* Recommended Action */}
         {intelligence.recommended_action && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+          <div className="animate-fade-in-up rounded-lg border border-green-200 bg-green-50 p-6" style={{ animationDelay: '500ms' }}>
             <h2 className="mb-3 text-xl font-semibold text-green-900">
               Recommended Action
             </h2>
@@ -299,7 +299,7 @@ export default function SignalDetailsPage() {
         )}
 
         {/* Suggested Products & Pricing */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="animate-fade-in-up grid gap-6 md:grid-cols-2" style={{ animationDelay: '600ms' }}>
           {intelligence.suggested_products &&
             intelligence.suggested_products.length > 0 && (
               <div className="rounded-lg border border-border bg-card p-6">
@@ -334,7 +334,7 @@ export default function SignalDetailsPage() {
         {/* Persona Insights - This is the GOLD */}
         {intelligence.persona_insights &&
           intelligence.persona_insights.length > 0 && (
-            <div className="space-y-4">
+            <div className="animate-fade-in-up space-y-4" style={{ animationDelay: '700ms' }}>
               <h2 className="text-2xl font-bold">GTM Persona Playbooks</h2>
               {intelligence.persona_insights.map((persona: any, idx: number) => (
                 <div
@@ -444,7 +444,7 @@ export default function SignalDetailsPage() {
 
         {/* Suggested Email Template */}
         {intelligence.suggested_email && (
-          <div className="rounded-lg border border-border bg-card p-6">
+          <div className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '800ms' }}>
             <h2 className="mb-4 text-xl font-semibold">Ready-to-Send Email</h2>
             <div className="rounded bg-muted p-4 font-mono text-sm">
               <pre className="whitespace-pre-wrap">{intelligence.suggested_email}</pre>
@@ -464,7 +464,7 @@ export default function SignalDetailsPage() {
         {/* General Talking Points */}
         {intelligence.talking_points &&
           intelligence.talking_points.length > 0 && (
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '900ms' }}>
               <h2 className="mb-4 text-xl font-semibold">General Talking Points</h2>
               <ul className="space-y-2">
                 {intelligence.talking_points.map((point: string, idx: number) => (
@@ -478,7 +478,7 @@ export default function SignalDetailsPage() {
           )}
 
         {/* Raw Data (for debugging) */}
-        <details className="rounded-lg border border-border bg-card p-6">
+        <details className="animate-fade-in-up rounded-lg border border-border bg-card p-6" style={{ animationDelay: '1000ms' }}>
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
             View Raw Data
           </summary>
@@ -487,6 +487,25 @@ export default function SignalDetailsPage() {
           </pre>
         </details>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation-fill-mode: both;
+          opacity: 0;
+        }
+      `}</style>
     </div>
   );
 }
