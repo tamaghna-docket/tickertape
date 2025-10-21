@@ -94,10 +94,20 @@ class APIClient {
   }
 
   // Get full intelligence report for a specific ticker and SaaS client
-  async getIntelligenceReport(ticker: string, saasClientName: string, signalType?: string): Promise<any> {
-    const url = signalType
-      ? `/api/intelligence/${ticker}/${saasClientName}?signalType=${encodeURIComponent(signalType)}`
+  async getIntelligenceReport(
+    ticker: string,
+    saasClientName: string,
+    signalType?: string,
+    generatedAt?: string
+  ): Promise<any> {
+    const params = new URLSearchParams();
+    if (signalType) params.set("signalType", signalType);
+    if (generatedAt) params.set("generatedAt", generatedAt);
+
+    const url = params.toString()
+      ? `/api/intelligence/${ticker}/${saasClientName}?${params.toString()}`
       : `/api/intelligence/${ticker}/${saasClientName}`;
+
     return this.request(url);
   }
 

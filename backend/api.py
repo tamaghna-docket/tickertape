@@ -432,8 +432,13 @@ async def get_signals_from_db(saas_client_name: str):
 
 
 @app.get("/api/intelligence/{ticker}/{saas_client_name}")
-async def get_intelligence_report(ticker: str, saas_client_name: str, signalType: Optional[str] = None):
-    """Get the full intelligence report for a specific customer, optionally filtered by signal type"""
+async def get_intelligence_report(
+    ticker: str,
+    saas_client_name: str,
+    signalType: Optional[str] = None,
+    generatedAt: Optional[str] = None
+):
+    """Get the full intelligence report for a specific customer, optionally filtered by signal type and/or generated_at timestamp"""
     if not platform_service:
         raise HTTPException(status_code=500, detail="Platform service not initialized")
 
@@ -458,17 +463,29 @@ async def get_intelligence_report(ticker: str, saas_client_name: str, signalType
             detail=f"No intelligence report found for {ticker} and {saas_client_name}"
         )
 
-    # If signalType is provided, filter by it
-    if signalType:
+    # Filter by signalType and/or generatedAt if provided
+    if signalType or generatedAt:
         for row in rows:
             intel_data = json.loads(row[0])
-            if intel_data.get("signal", {}).get("signal_type") == signalType:
+            signal = intel_data.get("signal", {})
+
+            # Check both filters
+            type_match = not signalType or signal.get("signal_type") == signalType
+            timestamp_match = not generatedAt or intel_data.get("generated_at") == generatedAt
+
+            if type_match and timestamp_match:
                 return intel_data
 
-        # If no matching signal type found, raise error
+        # If no matching signal found, raise error
+        filter_desc = []
+        if signalType:
+            filter_desc.append(f"signal type '{signalType}'")
+        if generatedAt:
+            filter_desc.append(f"timestamp '{generatedAt}'")
+
         raise HTTPException(
             status_code=404,
-            detail=f"No intelligence report found for {ticker}, {saas_client_name}, and signal type {signalType}"
+            detail=f"No intelligence report found for {ticker}, {saas_client_name} with {' and '.join(filter_desc)}"
         )
 
     # Otherwise return the most recent one
