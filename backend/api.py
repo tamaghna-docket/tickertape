@@ -509,6 +509,62 @@ async def get_customers(saas_client_name: str):
     }
 
 
+@app.get("/api/companies")
+async def get_all_onboarded_companies():
+    """Get all onboarded SaaS companies with their summary statistics"""
+    if not platform_service:
+        raise HTTPException(status_code=500, detail="Platform service not initialized")
+
+    import sqlite3
+
+    conn = sqlite3.connect(platform_service.platform.db_path)
+    c = conn.cursor()
+
+    # Get all SaaS clients with their config
+    c.execute('SELECT name, config FROM saas_clients ORDER BY name')
+    saas_rows = c.fetchall()
+
+    companies = []
+    for name, config_json in saas_rows:
+        config = json.loads(config_json) if config_json else {}
+
+        # Count customers for this company
+        c.execute('SELECT COUNT(*) FROM enterprise_customers WHERE saas_client = ?', (name,))
+        customer_count = c.fetchone()[0]
+
+        # Count signals for this company
+        c.execute('SELECT COUNT(*) FROM intelligence WHERE saas_client = ?', (name,))
+        signal_count = c.fetchone()[0]
+
+        # Extract stats from config
+        products = config.get("products", [])
+        pricing_tiers = config.get("pricing_tiers", [])
+        icps = config.get("ideal_customer_profiles", [])
+        personas = config.get("gtm_personas", [])
+
+        companies.append({
+            "name": name,
+            "customer_count": customer_count,
+            "signal_count": signal_count,
+            "products_count": len(products),
+            "pricing_tiers_count": len(pricing_tiers),
+            "icps_count": len(icps),
+            "personas_count": len(personas),
+            "website": config.get("website", ""),
+            "products": products,
+            "pricing_tiers": pricing_tiers,
+            "icps": icps,
+            "personas": personas
+        })
+
+    conn.close()
+
+    return {
+        "total_companies": len(companies),
+        "companies": companies
+    }
+
+
 # ============================================================================
 # WebSocket Endpoint
 # ============================================================================

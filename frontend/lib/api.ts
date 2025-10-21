@@ -111,6 +111,27 @@ class APIClient {
     return this.request(`/api/customers/${saasClientName}`);
   }
 
+  // Get all onboarded companies
+  async getAllCompanies(): Promise<{
+    total_companies: number;
+    companies: Array<{
+      name: string;
+      customer_count: number;
+      signal_count: number;
+      products_count: number;
+      pricing_tiers_count: number;
+      icps_count: number;
+      personas_count: number;
+      website: string;
+      products: any[];
+      pricing_tiers: any[];
+      icps: any[];
+      personas: any[];
+    }>;
+  }> {
+    return this.request("/api/companies");
+  }
+
   // WebSocket URL helper
   getWebSocketURL(jobId: string): string {
     const wsProtocol = this.baseURL.startsWith("https") ? "wss" : "ws";
