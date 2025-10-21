@@ -18,9 +18,11 @@ interface CustomerTickerProps {
   saasClientName: string;
   filteredTickers?: string[]; // Optional: if provided, only show these tickers
   signalUrgencies?: SignalUrgency[]; // Optional: urgency data for each ticker
+  label?: string; // Optional: custom label for the ticker
+  signalCount?: number; // Optional: number of signals for this ticker group
 }
 
-export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies }: CustomerTickerProps) {
+export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies, label, signalCount }: CustomerTickerProps) {
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,25 +88,29 @@ export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencie
 
   return (
     <div className="relative overflow-hidden border-y border-border bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 py-3">
-      {/* Label - Fixed width with clear background */}
-      <div className="absolute left-0 top-0 z-20 flex h-full items-center bg-background px-6 pr-8">
+      {/* Label - FIXED WIDTH to ensure consistent alignment */}
+      <div className="absolute left-0 top-0 z-20 flex h-full w-64 items-center bg-background px-6">
         <div className="flex flex-col">
           <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-primary">
-            Customer Ticker
+            {label || "Customer Ticker"}
           </span>
-          {isFiltered && (
+          {signalCount !== undefined ? (
+            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+              {signalCount} signal{signalCount !== 1 ? 's' : ''}
+            </span>
+          ) : isFiltered ? (
             <span className="whitespace-nowrap text-[10px] text-muted-foreground">
               {customers.length} of {allCustomers.length}
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Gradient fade after label */}
-      <div className="pointer-events-none absolute left-40 top-0 z-10 h-full w-16 bg-gradient-to-r from-background to-transparent"></div>
+      {/* Gradient fade after label - aligned with label width */}
+      <div className="pointer-events-none absolute left-64 top-0 z-10 h-full w-16 bg-gradient-to-r from-background to-transparent"></div>
 
-      {/* Scrolling Ticker */}
-      <div className="flex animate-ticker space-x-6 pl-60">
+      {/* Scrolling Ticker - starts after label + fade */}
+      <div className="flex animate-ticker space-x-6 pl-80">
         {tickerItems.map((customer, index) => {
           const urgencyBadge = getUrgencyBadge(customer.ticker);
 
