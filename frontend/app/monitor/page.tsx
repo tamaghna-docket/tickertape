@@ -23,7 +23,8 @@ export default function MonitorPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState<"all" | "high" | "medium" | "low">("all");
-  const [signalTypeFilter, setSignalTypeFilter] = useState<string>("all");
+  const [signalTypeFilters, setSignalTypeFilters] = useState<string[]>([]); // Changed to array for multi-select
+  const [signalTypeDropdownOpen, setSignalTypeDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"urgency" | "date" | "value">("urgency");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
@@ -125,10 +126,10 @@ export default function MonitorPage() {
           if (urgencyFilter === "low") return signal.urgency_score < 0.6;
           return true;
         })
-        // Apply signal type filter
+        // Apply signal type filter (multiple selection)
         .filter((signal) => {
-          if (signalTypeFilter === "all") return true;
-          return signal.signal_type === signalTypeFilter;
+          if (signalTypeFilters.length === 0) return true;
+          return signalTypeFilters.includes(signal.signal_type);
         })
         // Apply sorting
         .sort((a, b) => {
@@ -167,7 +168,7 @@ export default function MonitorPage() {
   };
 
   // Group signals by signal type for multiple tickers
-  const hasActiveFilters = searchQuery !== "" || urgencyFilter !== "all" || signalTypeFilter !== "all";
+  const hasActiveFilters = searchQuery !== "" || urgencyFilter !== "all" || signalTypeFilters.length > 0;
   const signalsToDisplay = hasActiveFilters ? filteredAndSortedSignals : (result?.signals || []);
 
   // Group by signal type
@@ -416,21 +417,76 @@ export default function MonitorPage() {
                     </div>
                   </div>
 
-                  {/* Signal Type Filter */}
-                  <div className="flex items-center gap-2">
+                  {/* Signal Type Filter - Dropdown with checkboxes */}
+                  <div className="relative flex items-center gap-2">
                     <label className="text-sm font-medium">Signal Type:</label>
-                    <select
-                      value={signalTypeFilter}
-                      onChange={(e) => setSignalTypeFilter(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">All Types</option>
-                      {signalTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type.replace(/_/g, " ")}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <button
+                        onClick={() => setSignalTypeDropdownOpen(!signalTypeDropdownOpen)}
+                        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm hover:bg-muted"
+                      >
+                        {signalTypeFilters.length === 0
+                          ? "All Types"
+                          : `${signalTypeFilters.length} selected`}
+                        <svg
+                          className={`h-4 w-4 transition-transform ${signalTypeDropdownOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </button>
+
+                      {signalTypeDropdownOpen && (
+                        <>
+                          {/* Backdrop to close dropdown */}
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setSignalTypeDropdownOpen(false)}
+                          />
+
+                          {/* Dropdown menu */}
+                          <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-md border border-border bg-background shadow-lg">
+                            <div className="max-h-64 overflow-y-auto p-2">
+                              {signalTypes.map((type) => (
+                                <label
+                                  key={type}
+                                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={signalTypeFilters.includes(type)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSignalTypeFilters([...signalTypeFilters, type]);
+                                      } else {
+                                        setSignalTypeFilters(signalTypeFilters.filter(t => t !== type));
+                                      }
+                                    }}
+                                    className="h-4 w-4 rounded border-gray-300"
+                                  />
+                                  <span className="flex-1">{type.replace(/_/g, " ")}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {signalTypeFilters.length > 0 && (
+                              <div className="border-t border-border p-2">
+                                <button
+                                  onClick={() => setSignalTypeFilters([])}
+                                  className="w-full text-center text-xs text-primary hover:underline"
+                                >
+                                  Clear all
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   {/* Sort By */}
@@ -475,7 +531,7 @@ export default function MonitorPage() {
                 </div>
 
                 {/* Active Filter Tags */}
-                {(searchQuery || urgencyFilter !== "all" || signalTypeFilter !== "all") && (
+                {(searchQuery || urgencyFilter !== "all" || signalTypeFilters.length > 0) && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted-foreground">Active filters:</span>
                     {searchQuery && (
@@ -500,22 +556,22 @@ export default function MonitorPage() {
                         </button>
                       </span>
                     )}
-                    {signalTypeFilter !== "all" && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs">
-                        Type: {signalTypeFilter.replace(/_/g, " ")}
+                    {signalTypeFilters.map((type) => (
+                      <span key={type} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs">
+                        Type: {type.replace(/_/g, " ")}
                         <button
-                          onClick={() => setSignalTypeFilter("all")}
+                          onClick={() => setSignalTypeFilters(signalTypeFilters.filter(t => t !== type))}
                           className="hover:text-primary"
                         >
                           ×
                         </button>
                       </span>
-                    )}
+                    ))}
                     <button
                       onClick={() => {
                         setSearchQuery("");
                         setUrgencyFilter("all");
-                        setSignalTypeFilter("all");
+                        setSignalTypeFilters([]);
                       }}
                       className="text-xs text-primary hover:underline"
                     >
@@ -529,7 +585,7 @@ export default function MonitorPage() {
             {filteredAndSortedSignals.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-12 text-center">
                 <p className="text-muted-foreground">
-                  {searchQuery || urgencyFilter !== "all" || signalTypeFilter !== "all"
+                  {searchQuery || urgencyFilter !== "all" || signalTypeFilters.length > 0
                     ? "No signals match your filters. Try adjusting your search criteria."
                     : `No buying signals detected for ${result.saas_client} customers`}
                 </p>
