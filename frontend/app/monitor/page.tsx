@@ -697,6 +697,9 @@ function SignalCard({
     const params = new URLSearchParams();
     params.set("client", saasClient);
 
+    // IMPORTANT: Add signal type to ensure correct signal is shown
+    params.set("signalType", signal.signal_type);
+
     // Preserve current filters
     const search = searchParams?.get("search");
     const urgency = searchParams?.get("urgency");

@@ -182,6 +182,14 @@ export default function SignalDetailsPage() {
           </div>
         </div>
 
+        {/* Signal Summary - Prominent display of what this signal is about */}
+        {signal.summary && (
+          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-6">
+            <h2 className="mb-3 text-lg font-semibold text-primary">Signal Summary</h2>
+            <p className="text-base leading-relaxed">{signal.summary}</p>
+          </div>
+        )}
+
         {/* Opportunity Summary */}
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 text-xl font-semibold">Opportunity Summary</h2>
