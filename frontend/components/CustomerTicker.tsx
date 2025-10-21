@@ -21,15 +21,21 @@ interface CustomerTickerProps {
   signalUrgencies?: SignalUrgency[]; // Optional: urgency data for each ticker
   label?: string; // Optional: custom label for the ticker
   signalCount?: number; // Optional: number of signals for this ticker group
+  signalType?: string; // Optional: signal type to filter by on details page
 }
 
-export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies, label, signalCount }: CustomerTickerProps) {
+export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies, label, signalCount, signalType }: CustomerTickerProps) {
   const searchParams = useSearchParams();
 
   // Build URL with current filter params
   const buildTickerUrl = (ticker: string) => {
     const params = new URLSearchParams();
     params.set("client", saasClientName);
+
+    // Add signal type if provided (to filter on details page)
+    if (signalType) {
+      params.set("signalType", signalType);
+    }
 
     // Preserve current filters
     const search = searchParams?.get("search");

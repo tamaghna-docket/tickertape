@@ -10,6 +10,7 @@ export default function SignalDetailsPage() {
   const searchParams = useSearchParams();
   const ticker = params?.ticker as string;
   const saasClient = searchParams?.get("client") || "";
+  const signalType = searchParams?.get("signalType") || "";
 
   // Build back URL with preserved filters
   const backToMonitorUrl = () => {
@@ -38,12 +39,12 @@ export default function SignalDetailsPage() {
     if (ticker && saasClient) {
       loadIntelligence();
     }
-  }, [ticker, saasClient]);
+  }, [ticker, saasClient, signalType]);
 
   const loadIntelligence = async () => {
     try {
       setLoading(true);
-      const data = await api.getIntelligenceReport(ticker, saasClient);
+      const data = await api.getIntelligenceReport(ticker, saasClient, signalType);
       setIntelligence(data);
       setError(null);
     } catch (err) {

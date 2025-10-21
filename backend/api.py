@@ -432,8 +432,8 @@ async def get_signals_from_db(saas_client_name: str):
 
 
 @app.get("/api/intelligence/{ticker}/{saas_client_name}")
-async def get_intelligence_report(ticker: str, saas_client_name: str):
-    """Get the full intelligence report for a specific customer"""
+async def get_intelligence_report(ticker: str, saas_client_name: str, signalType: Optional[str] = None):
+    """Get the full intelligence report for a specific customer, optionally filtered by signal type"""
     if not platform_service:
         raise HTTPException(status_code=500, detail="Platform service not initialized")
 
@@ -442,24 +442,37 @@ async def get_intelligence_report(ticker: str, saas_client_name: str):
     conn = sqlite3.connect(platform_service.platform.db_path)
     c = conn.cursor()
 
+    # Fetch all intelligence reports for this ticker and client
     c.execute('''
         SELECT intelligence FROM intelligence
         WHERE ticker = ? AND saas_client = ?
         ORDER BY generated_at DESC
-        LIMIT 1
     ''', (ticker, saas_client_name))
 
-    row = c.fetchone()
+    rows = c.fetchall()
     conn.close()
 
-    if not row:
+    if not rows:
         raise HTTPException(
             status_code=404,
             detail=f"No intelligence report found for {ticker} and {saas_client_name}"
         )
 
-    # Return the full intelligence data
-    return json.loads(row[0])
+    # If signalType is provided, filter by it
+    if signalType:
+        for row in rows:
+            intel_data = json.loads(row[0])
+            if intel_data.get("signal", {}).get("signal_type") == signalType:
+                return intel_data
+
+        # If no matching signal type found, raise error
+        raise HTTPException(
+            status_code=404,
+            detail=f"No intelligence report found for {ticker}, {saas_client_name}, and signal type {signalType}"
+        )
+
+    # Otherwise return the most recent one
+    return json.loads(rows[0][0])
 
 
 @app.get("/api/customers/{saas_client_name}")

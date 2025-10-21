@@ -364,6 +364,7 @@ export default function MonitorPage() {
                     signalUrgencies={group.urgencies}
                     label={group.signalType.replace(/_/g, " ").toUpperCase()}
                     signalCount={group.count}
+                    signalType={group.signalType}
                   />
                 ))}
               </div>
