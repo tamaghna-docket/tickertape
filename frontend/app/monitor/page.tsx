@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { ProgressDisplay } from "@/components/ProgressDisplay";
 import { CustomerTicker } from "@/components/CustomerTicker";
@@ -10,6 +10,7 @@ import { formatDate, getUrgencyLabel, getUrgencyColor } from "@/lib/utils";
 
 export default function MonitorPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [companyName, setCompanyName] = useState(
     searchParams?.get("company") || ""
   );
@@ -20,12 +21,18 @@ export default function MonitorPage() {
   const [result, setResult] = useState<MonitorResult | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [urgencyFilter, setUrgencyFilter] = useState<"all" | "high" | "medium" | "low">("all");
-  const [signalTypeFilters, setSignalTypeFilters] = useState<string[]>([]); // Changed to array for multi-select
+  // Filter states - Initialize from URL
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get("search") || "");
+  const [urgencyFilter, setUrgencyFilter] = useState<"all" | "high" | "medium" | "low">(
+    (searchParams?.get("urgency") as "all" | "high" | "medium" | "low") || "all"
+  );
+  const [signalTypeFilters, setSignalTypeFilters] = useState<string[]>(
+    searchParams?.get("types")?.split(",").filter(Boolean) || []
+  );
   const [signalTypeDropdownOpen, setSignalTypeDropdownOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<"urgency" | "date" | "value">("urgency");
+  const [sortBy, setSortBy] = useState<"urgency" | "date" | "value">(
+    (searchParams?.get("sort") as "urgency" | "date" | "value") || "urgency"
+  );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const handleLoadExisting = async () => {
@@ -57,6 +64,30 @@ export default function MonitorPage() {
       setLoadingExisting(false);
     }
   };
+
+  // Auto-load signals when page loads with company parameter
+  useEffect(() => {
+    const initialCompany = searchParams?.get("company");
+    if (initialCompany && !result && !loadingExisting && !isSubmitting) {
+      handleLoadExisting();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (!result) return; // Only update URL when results are loaded
+
+    const params = new URLSearchParams();
+    if (companyName) params.set("company", companyName);
+    if (searchQuery) params.set("search", searchQuery);
+    if (urgencyFilter !== "all") params.set("urgency", urgencyFilter);
+    if (signalTypeFilters.length > 0) params.set("types", signalTypeFilters.join(","));
+    if (sortBy !== "urgency") params.set("sort", sortBy);
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
+  }, [searchQuery, urgencyFilter, signalTypeFilters, sortBy, companyName, result, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -624,11 +655,31 @@ function SignalCard({
   saasClient: string;
   viewMode?: "list" | "grid";
 }) {
+  const searchParams = useSearchParams();
   const urgencyLabel = getUrgencyLabel(signal.urgency_score);
   const urgencyColor = getUrgencyColor(signal.urgency_score);
 
   // Clean company name (remove everything after — or ([)
   const cleanCompanyName = signal.company_name.split(/—|\(/)[0].trim();
+
+  // Build URL with preserved filters
+  const buildDetailsUrl = () => {
+    const params = new URLSearchParams();
+    params.set("client", saasClient);
+
+    // Preserve current filters
+    const search = searchParams?.get("search");
+    const urgency = searchParams?.get("urgency");
+    const types = searchParams?.get("types");
+    const sort = searchParams?.get("sort");
+
+    if (search) params.set("search", search);
+    if (urgency) params.set("urgency", urgency);
+    if (types) params.set("types", types);
+    if (sort) params.set("sort", sort);
+
+    return `/signals/${signal.ticker}?${params.toString()}`;
+  };
 
   return (
     <div className="rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-md">
@@ -686,7 +737,7 @@ function SignalCard({
         </div>
 
         <a
-          href={`/signals/${signal.ticker}?client=${encodeURIComponent(saasClient)}`}
+          href={buildDetailsUrl()}
           className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           View Details

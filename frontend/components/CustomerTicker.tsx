@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 
 interface Customer {
@@ -23,6 +24,26 @@ interface CustomerTickerProps {
 }
 
 export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencies, label, signalCount }: CustomerTickerProps) {
+  const searchParams = useSearchParams();
+
+  // Build URL with current filter params
+  const buildTickerUrl = (ticker: string) => {
+    const params = new URLSearchParams();
+    params.set("client", saasClientName);
+
+    // Preserve current filters
+    const search = searchParams?.get("search");
+    const urgency = searchParams?.get("urgency");
+    const types = searchParams?.get("types");
+    const sort = searchParams?.get("sort");
+
+    if (search) params.set("search", search);
+    if (urgency) params.set("urgency", urgency);
+    if (types) params.set("types", types);
+    if (sort) params.set("sort", sort);
+
+    return `/signals/${ticker}?${params.toString()}`;
+  };
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -117,9 +138,7 @@ export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencie
           return (
             <a
               key={`${customer.ticker}-${index}`}
-              href={`/signals/${customer.ticker}?client=${encodeURIComponent(
-                saasClientName
-              )}`}
+              href={buildTickerUrl(customer.ticker)}
               className="group flex min-w-fit items-center gap-3 rounded-lg border border-border bg-card px-4 py-2 shadow-sm transition-all hover:scale-105 hover:border-primary hover:shadow-md"
             >
               {/* Ticker Symbol Badge */}

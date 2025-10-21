@@ -11,6 +11,25 @@ export default function SignalDetailsPage() {
   const ticker = params?.ticker as string;
   const saasClient = searchParams?.get("client") || "";
 
+  // Build back URL with preserved filters
+  const backToMonitorUrl = () => {
+    const params = new URLSearchParams();
+    params.set("company", saasClient);
+
+    // Preserve filter params from URL if they exist
+    const search = searchParams?.get("search");
+    const urgency = searchParams?.get("urgency");
+    const types = searchParams?.get("types");
+    const sort = searchParams?.get("sort");
+
+    if (search) params.set("search", search);
+    if (urgency) params.set("urgency", urgency);
+    if (types) params.set("types", types);
+    if (sort) params.set("sort", sort);
+
+    return `/monitor?${params.toString()}`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [intelligence, setIntelligence] = useState<any>(null);
@@ -56,7 +75,7 @@ export default function SignalDetailsPage() {
             <p className="text-sm text-red-700">{error}</p>
           </div>
           <a
-            href="/monitor"
+            href={backToMonitorUrl()}
             className="mt-4 inline-block text-sm text-primary hover:underline"
           >
             ← Back to Monitor
@@ -86,7 +105,7 @@ export default function SignalDetailsPage() {
         {/* Header */}
         <div className="space-y-2">
           <a
-            href="/monitor"
+            href={backToMonitorUrl()}
             className="inline-block text-sm text-muted-foreground hover:text-primary"
           >
             ← Back to Monitor
