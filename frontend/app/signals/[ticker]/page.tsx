@@ -99,27 +99,85 @@ export default function SignalDetailsPage() {
   const signal = intelligence.signal || {};
   const opportunity = intelligence.opportunity_analysis || {};
 
+  // Extract clean company name and details
+  const parseCompanyName = (fullName: string) => {
+    // Split by " — " or " - " to separate name from description
+    const parts = fullName.split(/\s+[—\-]\s+/);
+    const companyPart = parts[0] || fullName;
+    const description = parts.slice(1).join(" — ");
+
+    // Extract stock exchange info if present (e.g., "(LSE: CNA)")
+    const exchangeMatch = companyPart.match(/\(([^)]+:\s*[^)]+)\)/);
+    const exchange = exchangeMatch ? exchangeMatch[1] : null;
+
+    // Clean company name (remove exchange info)
+    const cleanName = companyPart.replace(/\s*\([^)]+:\s*[^)]+\)\s*/, "").trim();
+
+    // Extract URLs from description
+    const urlMatch = description.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    const urlText = urlMatch ? urlMatch[1] : null;
+    const url = urlMatch ? urlMatch[2] : null;
+
+    // Clean description (remove markdown links and any remaining empty parentheses)
+    const cleanDescription = description
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "")  // Remove markdown links
+      .replace(/\(\s*\)/g, "")                   // Remove empty parentheses
+      .replace(/\s+/g, " ")                      // Normalize whitespace
+      .trim();
+
+    return { cleanName, exchange, description: cleanDescription, urlText, url };
+  };
+
+  const companyInfo = customer.company_name
+    ? parseCompanyName(customer.company_name)
+    : { cleanName: ticker, exchange: null, description: "", urlText: null, url: null };
+
   return (
     <div className="container py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <a
             href={backToMonitorUrl()}
             className="inline-block text-sm text-muted-foreground hover:text-primary"
           >
             ← Back to Monitor
           </a>
-          <h1 className="text-3xl font-bold">
-            {customer.company_name || ticker}
-          </h1>
-          <div className="flex items-center gap-3">
-            <span className="rounded bg-muted px-2 py-1 text-sm font-medium">
-              {ticker}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {signal.signal_type?.replace(/_/g, " ") || "N/A"}
-            </span>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {companyInfo.cleanName}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="rounded bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary">
+                {ticker}
+              </span>
+              {companyInfo.exchange && (
+                <span className="rounded bg-muted px-2.5 py-1 text-sm font-medium text-muted-foreground">
+                  {companyInfo.exchange}
+                </span>
+              )}
+              <span className="rounded bg-muted px-2.5 py-1 text-sm font-medium">
+                {signal.signal_type?.replace(/_/g, " ") || "N/A"}
+              </span>
+            </div>
+            {companyInfo.description && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {companyInfo.description}
+              </p>
+            )}
+            {companyInfo.url && (
+              <a
+                href={companyInfo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+                {companyInfo.urlText || "View Source"}
+              </a>
+            )}
           </div>
         </div>
 

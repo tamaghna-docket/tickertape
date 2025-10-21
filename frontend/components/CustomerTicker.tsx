@@ -44,6 +44,19 @@ export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencie
 
     return `/signals/${ticker}?${params.toString()}`;
   };
+
+  // Helper function to clean company name
+  const getCleanCompanyName = (fullName: string) => {
+    // Split by " — " or " - " to remove description
+    const parts = fullName.split(/\s+[—\-]\s+/);
+    const companyPart = parts[0] || fullName;
+
+    // Remove stock exchange info like "(NASDAQ: EBAY)" or "(LSE: CNA)"
+    const cleanName = companyPart.replace(/\s*\([^)]+:\s*[^)]+\)\s*/, "").trim();
+
+    return cleanName;
+  };
+
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,7 +162,7 @@ export function CustomerTicker({ saasClientName, filteredTickers, signalUrgencie
               {/* Company Name with Urgency Badge */}
               <div className="flex min-w-0 items-center gap-2">
                 <div className="truncate text-sm font-medium">
-                  {customer.company_name.split("—")[0].trim()}
+                  {getCleanCompanyName(customer.company_name)}
                 </div>
                 {urgencyBadge && (
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${urgencyBadge.color}`}>
