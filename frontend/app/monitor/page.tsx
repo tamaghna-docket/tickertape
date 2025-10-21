@@ -20,6 +20,8 @@ export default function MonitorPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [result, setResult] = useState<MonitorResult | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(false);
+  const [onboardedCompanies, setOnboardedCompanies] = useState<string[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
 
   // Filter states - Initialize from URL
   const [searchQuery, setSearchQuery] = useState(searchParams?.get("search") || "");
@@ -33,7 +35,7 @@ export default function MonitorPage() {
   const [sortBy, setSortBy] = useState<"urgency" | "date" | "value">(
     (searchParams?.get("sort") as "urgency" | "date" | "value") || "urgency"
   );
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   const handleLoadExisting = async () => {
     if (!companyName) {
@@ -64,6 +66,21 @@ export default function MonitorPage() {
       setLoadingExisting(false);
     }
   };
+
+  // Fetch onboarded companies on page load
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const data = await api.getAllCompanies();
+        setOnboardedCompanies(data.companies.map(c => c.name));
+      } catch (err) {
+        console.error("Failed to load onboarded companies:", err);
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+    fetchCompanies();
+  }, []);
 
   // Auto-load signals when page loads with company parameter
   useEffect(() => {
@@ -238,15 +255,17 @@ export default function MonitorPage() {
   return (
     <div className="py-6 px-6">
       <div className="mx-auto max-w-full space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Monitor Customers</h1>
-          <p className="text-muted-foreground">
-            Monitor enterprise customers for buying signals from SEC 8-K filings
-          </p>
-        </div>
+        {/* Header and Form - Constrained Width */}
+        <div className="mx-auto max-w-5xl space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">Monitor Customers</h1>
+            <p className="text-muted-foreground">
+              Monitor enterprise customers for buying signals from SEC 8-K filings
+            </p>
+          </div>
 
-        {!jobId && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {!jobId && !result && (
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label
                 htmlFor="company_name"
@@ -254,15 +273,23 @@ export default function MonitorPage() {
               >
                 SaaS Company Name
               </label>
-              <input
+              <select
                 id="company_name"
-                type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g., Salesforce"
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              />
+                disabled={loadingCompanies}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">
+                  {loadingCompanies ? "Loading companies..." : "Select a company"}
+                </option>
+                {onboardedCompanies.map((company) => (
+                  <option key={company} value={company}>
+                    {company}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -313,15 +340,17 @@ export default function MonitorPage() {
               </button>
             </div>
           </form>
-        )}
+          )}
 
-        {jobId && !result && (
-          <ProgressDisplay
-            jobId={jobId}
-            title={`Monitoring: ${companyName} Customers`}
-          />
-        )}
+          {jobId && !result && (
+            <ProgressDisplay
+              jobId={jobId}
+              title={`Monitoring: ${companyName} Customers`}
+            />
+          )}
+        </div>
 
+        {/* Results - Full Width */}
         {result && (
           <div className="space-y-6">
             {/* Multiple Tickers Grouped by Signal Type */}

@@ -123,6 +123,12 @@ class APIClient {
       icps_count: number;
       personas_count: number;
       website: string;
+      industry: string;
+      product_description: string;
+      typical_customer_profile: string;
+      pricing_model: string;
+      expansion_opportunities: string[];
+      churn_indicators: string[];
       products: any[];
       pricing_tiers: any[];
       icps: any[];

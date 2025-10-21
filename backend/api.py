@@ -551,6 +551,14 @@ async def get_all_onboarded_companies():
             "icps_count": len(icps),
             "personas_count": len(personas),
             "website": config.get("website", ""),
+            # Company overview data
+            "industry": config.get("industry", ""),
+            "product_description": config.get("product_description", ""),
+            "typical_customer_profile": config.get("typical_customer_profile", ""),
+            "pricing_model": config.get("pricing_model", ""),
+            "expansion_opportunities": config.get("expansion_opportunities", []),
+            "churn_indicators": config.get("churn_indicators", []),
+            # Detailed structured data
             "products": products,
             "pricing_tiers": pricing_tiers,
             "icps": icps,

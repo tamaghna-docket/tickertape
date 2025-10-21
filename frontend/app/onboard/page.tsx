@@ -18,6 +18,19 @@ export default function OnboardPage() {
   const [showCompanies, setShowCompanies] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+
+  const toggleCompany = (companyName: string) => {
+    setExpandedCompanies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(companyName)) {
+        newSet.delete(companyName);
+      } else {
+        newSet.add(companyName);
+      }
+      return newSet;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,14 +120,19 @@ export default function OnboardPage() {
               <p className="text-muted-foreground">No companies have been onboarded yet</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {companies.map((company) => (
+            <div className="space-y-4">
+              {companies.map((company) => {
+                const isExpanded = expandedCompanies.has(company.name);
+                return (
                 <div key={company.name} className="rounded-lg border border-border bg-card overflow-hidden">
                   {/* Header */}
                   <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6 border-b border-border">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-2xl font-bold">{company.name}</h3>
+                        {company.industry && (
+                          <p className="text-sm font-medium text-primary mt-1">{company.industry}</p>
+                        )}
                         {company.website && (
                           <a
                             href={`https://${company.website}`}
@@ -125,24 +143,55 @@ export default function OnboardPage() {
                             {company.website}
                           </a>
                         )}
+                        {company.product_description && (
+                          <p className="text-sm text-muted-foreground mt-2 max-w-3xl">{company.product_description}</p>
+                        )}
+                        {company.typical_customer_profile && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            <span className="font-semibold">Typical Customer:</span> {company.typical_customer_profile}
+                          </p>
+                        )}
+                        {company.pricing_model && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <span className="font-semibold">Pricing Model:</span> {company.pricing_model}
+                          </p>
+                        )}
                       </div>
-                      <a
-                        href={`/monitor?company=${encodeURIComponent(company.name)}`}
-                        className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                      >
-                        Monitor Customers
-                      </a>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleCompany(company.name)}
+                          className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {isExpanded ? (
+                            <>
+                              <svg className="h-4 w-4 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M5 15l7-7 7 7"></path>
+                              </svg>
+                              Collapse
+                            </>
+                          ) : (
+                            <>
+                              <svg className="h-4 w-4 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M19 9l-7 7-7-7"></path>
+                              </svg>
+                              Expand Details
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={`/monitor?company=${encodeURIComponent(company.name)}`}
+                          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        >
+                          Monitor Customers
+                        </a>
+                      </div>
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Customers</p>
                         <p className="text-xl font-bold">{company.customer_count}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Signals</p>
-                        <p className="text-xl font-bold">{company.signal_count}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Products</p>
@@ -163,8 +212,52 @@ export default function OnboardPage() {
                     </div>
                   </div>
 
-                  {/* Detailed Content */}
+                  {/* Detailed Content - Only show when expanded */}
+                  {isExpanded && (
                   <div className="p-6 space-y-6">
+                    {/* Expansion Opportunities & Churn Indicators */}
+                    {(company.expansion_opportunities && company.expansion_opportunities.length > 0) || (company.churn_indicators && company.churn_indicators.length > 0) && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {company.expansion_opportunities && company.expansion_opportunities.length > 0 && (
+                          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                            <h4 className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                              <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                              </svg>
+                              Expansion Opportunities
+                            </h4>
+                            <ul className="text-xs space-y-1">
+                              {company.expansion_opportunities.map((opp: string, i: number) => (
+                                <li key={i} className="flex items-start gap-1.5 text-green-800">
+                                  <span className="text-green-600 mt-0.5">→</span>
+                                  <span>{opp}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {company.churn_indicators && company.churn_indicators.length > 0 && (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                            <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                              <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                              </svg>
+                              Churn Indicators
+                            </h4>
+                            <ul className="text-xs space-y-1">
+                              {company.churn_indicators.map((ind: string, i: number) => (
+                                <li key={i} className="flex items-start gap-1.5 text-amber-800">
+                                  <span className="text-amber-600 mt-0.5">!</span>
+                                  <span>{ind}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Products */}
                     {company.products && company.products.length > 0 && (
                       <div>
@@ -174,17 +267,44 @@ export default function OnboardPage() {
                             <div key={idx} className="rounded-lg border border-border p-4 space-y-2">
                               <h5 className="font-semibold text-primary">{product.name}</h5>
                               <p className="text-sm text-muted-foreground">{product.description}</p>
+
                               {product.key_features && product.key_features.length > 0 && (
                                 <div className="pt-2">
                                   <p className="text-xs font-medium text-muted-foreground mb-1">Key Features:</p>
                                   <ul className="text-xs space-y-0.5">
-                                    {product.key_features.slice(0, 3).map((feature: string, i: number) => (
+                                    {product.key_features.map((feature: string, i: number) => (
                                       <li key={i} className="flex items-start gap-1">
                                         <span className="text-primary mt-0.5">•</span>
                                         <span>{feature}</span>
                                       </li>
                                     ))}
                                   </ul>
+                                </div>
+                              )}
+
+                              {product.use_cases && product.use_cases.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Use Cases:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {product.use_cases.map((useCase: string, i: number) => (
+                                      <span key={i} className="rounded bg-indigo-100 px-2 py-0.5 text-xs text-indigo-800">
+                                        {useCase}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {product.target_personas && product.target_personas.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Target Personas:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {product.target_personas.map((persona: string, i: number) => (
+                                      <span key={i} className="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
+                                        {persona}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -197,12 +317,42 @@ export default function OnboardPage() {
                     {company.pricing_tiers && company.pricing_tiers.length > 0 && (
                       <div>
                         <h4 className="text-lg font-semibold mb-3">Pricing Tiers</h4>
-                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-3 md:grid-cols-2">
                           {company.pricing_tiers.map((tier: any, idx: number) => (
                             <div key={idx} className="rounded-lg border border-border p-4 space-y-2">
-                              <h5 className="font-semibold">{tier.name}</h5>
-                              <p className="text-sm text-primary font-medium">{tier.price_range}</p>
-                              <p className="text-xs text-muted-foreground">{tier.target_segment}</p>
+                              <div>
+                                <h5 className="font-semibold">{tier.name}</h5>
+                                <p className="text-sm text-primary font-medium">{tier.price_range}</p>
+                                <p className="text-xs text-muted-foreground">{tier.target_segment}</p>
+                              </div>
+
+                              {tier.key_features && tier.key_features.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Included Features:</p>
+                                  <ul className="text-xs space-y-0.5">
+                                    {tier.key_features.map((feature: string, i: number) => (
+                                      <li key={i} className="flex items-start gap-1">
+                                        <span className="text-green-600 mt-0.5">✓</span>
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {tier.limitations && tier.limitations.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Limitations:</p>
+                                  <ul className="text-xs space-y-0.5">
+                                    {tier.limitations.map((limit: string, i: number) => (
+                                      <li key={i} className="flex items-start gap-1 text-muted-foreground">
+                                        <span className="text-amber-600 mt-0.5">!</span>
+                                        <span>{limit}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -213,18 +363,62 @@ export default function OnboardPage() {
                     {company.icps && company.icps.length > 0 && (
                       <div>
                         <h4 className="text-lg font-semibold mb-3">Ideal Customer Profiles</h4>
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-4 md:grid-cols-2">
                           {company.icps.map((icp: any, idx: number) => (
-                            <div key={idx} className="rounded-lg border border-border p-4 space-y-2">
-                              <h5 className="font-semibold text-primary">{icp.segment_name}</h5>
-                              <p className="text-sm text-muted-foreground">{icp.description}</p>
-                              {icp.characteristics && icp.characteristics.length > 0 && (
-                                <div className="pt-1">
-                                  <p className="text-xs font-medium text-muted-foreground mb-1">Characteristics:</p>
+                            <div key={idx} className="rounded-lg border border-border p-4 space-y-3">
+                              <div>
+                                <h5 className="font-semibold text-primary text-lg">{icp.segment_name}</h5>
+                                <p className="text-sm text-muted-foreground">{icp.company_size}</p>
+                              </div>
+
+                              {icp.industry_verticals && icp.industry_verticals.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Industry Verticals:</p>
                                   <div className="flex flex-wrap gap-1">
-                                    {icp.characteristics.slice(0, 3).map((char: string, i: number) => (
-                                      <span key={i} className="rounded bg-primary/10 px-2 py-0.5 text-xs">
-                                        {char}
+                                    {icp.industry_verticals.map((vertical: string, i: number) => (
+                                      <span key={i} className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                                        {vertical}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {icp.key_pain_points && icp.key_pain_points.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Key Pain Points:</p>
+                                  <ul className="text-xs space-y-0.5">
+                                    {icp.key_pain_points.map((pain: string, i: number) => (
+                                      <li key={i} className="flex items-start gap-1">
+                                        <span className="text-red-500 mt-0.5">•</span>
+                                        <span>{pain}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {icp.buying_triggers && icp.buying_triggers.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Buying Triggers:</p>
+                                  <ul className="text-xs space-y-0.5">
+                                    {icp.buying_triggers.map((trigger: string, i: number) => (
+                                      <li key={i} className="flex items-start gap-1">
+                                        <span className="text-green-500 mt-0.5">→</span>
+                                        <span>{trigger}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {icp.decision_makers && icp.decision_makers.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Decision Makers:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {icp.decision_makers.map((dm: string, i: number) => (
+                                      <span key={i} className="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
+                                        {dm}
                                       </span>
                                     ))}
                                   </div>
@@ -243,10 +437,30 @@ export default function OnboardPage() {
                         <div className="grid gap-3 md:grid-cols-3">
                           {company.personas.map((persona: any, idx: number) => (
                             <div key={idx} className="rounded-lg border border-border p-4 space-y-2">
-                              <h5 className="font-semibold text-primary">{persona.role}</h5>
-                              <p className="text-sm text-muted-foreground">{persona.description}</p>
+                              <div>
+                                <h5 className="font-semibold text-primary text-lg">{persona.role_title}</h5>
+                                {persona.department && persona.seniority_level && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {persona.department} • {persona.seniority_level}
+                                  </p>
+                                )}
+                              </div>
+
+                              {persona.core_focus_areas && persona.core_focus_areas.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Core Focus:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {persona.core_focus_areas.map((area: string, i: number) => (
+                                      <span key={i} className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                                        {area}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               {persona.pain_points && persona.pain_points.length > 0 && (
-                                <div className="pt-1">
+                                <div>
                                   <p className="text-xs font-medium text-muted-foreground mb-1">Pain Points:</p>
                                   <ul className="text-xs space-y-0.5">
                                     {persona.pain_points.slice(0, 2).map((pain: string, i: number) => (
@@ -258,14 +472,42 @@ export default function OnboardPage() {
                                   </ul>
                                 </div>
                               )}
+
+                              {persona.key_metrics && persona.key_metrics.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Key Metrics:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {persona.key_metrics.map((metric: string, i: number) => (
+                                      <span key={i} className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">
+                                        {metric}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {persona.buying_signals_they_care_about && persona.buying_signals_they_care_about.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Buying Signals:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {persona.buying_signals_they_care_about.map((signal: string, i: number) => (
+                                      <span key={i} className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+                                        {signal}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
