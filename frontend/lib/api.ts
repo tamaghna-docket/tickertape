@@ -98,6 +98,19 @@ class APIClient {
     return this.request(`/api/intelligence/${ticker}/${saasClientName}`);
   }
 
+  // Get all customers for a SaaS client
+  async getCustomers(saasClientName: string): Promise<{
+    saas_client: string;
+    customer_count: number;
+    customers: Array<{
+      ticker: string;
+      company_name: string;
+      industry: string;
+    }>;
+  }> {
+    return this.request(`/api/customers/${saasClientName}`);
+  }
+
   // WebSocket URL helper
   getWebSocketURL(jobId: string): string {
     const wsProtocol = this.baseURL.startsWith("https") ? "wss" : "ws";

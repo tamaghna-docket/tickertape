@@ -46,6 +46,8 @@ export interface SignalSummary {
   ticker: string;
   company_name: string;
   signal_type: string;
+  signal_summary?: string;  // Summary of the signal to differentiate multiples
+  filing_date?: string;      // Filing date for the signal
   opportunity_type: string;
   urgency_score: number;
   estimated_value: string;

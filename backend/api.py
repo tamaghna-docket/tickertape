@@ -410,11 +410,14 @@ async def get_signals_from_db(saas_client_name: str):
     for row in rows:
         intel_data = json.loads(row[0])
 
-        # Extract signal summary
+        # Extract signal summary with enough detail to differentiate multiple signals
+        signal_data = intel_data.get("signal", {})
         signals.append({
             "ticker": intel_data.get("enterprise_customer", {}).get("ticker", "N/A"),
             "company_name": intel_data.get("enterprise_customer", {}).get("company_name", "Unknown"),
-            "signal_type": intel_data.get("signal", {}).get("signal_type", "unknown"),
+            "signal_type": signal_data.get("signal_type", "unknown"),
+            "signal_summary": signal_data.get("summary", ""),  # Add summary to distinguish signals
+            "filing_date": signal_data.get("filing_date", ""),  # Add filing date
             "opportunity_type": intel_data.get("opportunity_type", "unknown"),
             "urgency_score": intel_data.get("urgency_score", 0.0),
             "estimated_value": intel_data.get("estimated_opportunity_value", "Unknown"),
@@ -457,6 +460,53 @@ async def get_intelligence_report(ticker: str, saas_client_name: str):
 
     # Return the full intelligence data
     return json.loads(row[0])
+
+
+@app.get("/api/customers/{saas_client_name}")
+async def get_customers(saas_client_name: str):
+    """Get all enterprise customers for a SaaS client"""
+    if not platform_service:
+        raise HTTPException(status_code=500, detail="Platform service not initialized")
+
+    import sqlite3
+
+    conn = sqlite3.connect(platform_service.platform.db_path)
+    c = conn.cursor()
+
+    # Query enterprise_customers table
+    c.execute('''
+        SELECT ticker, company_name, config FROM enterprise_customers
+        WHERE saas_client = ?
+        ORDER BY company_name
+    ''', (saas_client_name,))
+
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        return {
+            "saas_client": saas_client_name,
+            "customer_count": 0,
+            "customers": []
+        }
+
+    # Parse and return customer list
+    customer_list = []
+    for row in rows:
+        ticker, company_name, config_json = row
+        config = json.loads(config_json) if config_json else {}
+
+        customer_list.append({
+            "ticker": ticker,
+            "company_name": company_name,
+            "industry": config.get("industry", "Unknown")
+        })
+
+    return {
+        "saas_client": saas_client_name,
+        "customer_count": len(customer_list),
+        "customers": customer_list
+    }
 
 
 # ============================================================================

@@ -174,21 +174,211 @@ export default function SignalDetailsPage() {
           </div>
         )}
 
-        {/* Opportunity Analysis */}
-        {opportunity.analysis && (
+        {/* Signal Implications & Impact */}
+        {(intelligence.signal_implications || intelligence.relationship_impact) && (
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-xl font-semibold">Opportunity Analysis</h2>
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap">{opportunity.analysis}</p>
+            <h2 className="mb-4 text-xl font-semibold">Strategic Analysis</h2>
+            <div className="space-y-4">
+              {intelligence.signal_implications && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Signal Implications
+                  </p>
+                  <p className="mt-1 text-sm">{intelligence.signal_implications}</p>
+                </div>
+              )}
+              {intelligence.relationship_impact && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Relationship Impact
+                  </p>
+                  <p className="mt-1 text-sm">{intelligence.relationship_impact}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Talking Points */}
+        {/* Recommended Action */}
+        {intelligence.recommended_action && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+            <h2 className="mb-3 text-xl font-semibold text-green-900">
+              Recommended Action
+            </h2>
+            <p className="text-sm text-green-800">
+              {intelligence.recommended_action}
+            </p>
+          </div>
+        )}
+
+        {/* Suggested Products & Pricing */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {intelligence.suggested_products &&
+            intelligence.suggested_products.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="mb-3 font-semibold">Suggested Products</h3>
+                <ul className="space-y-2">
+                  {intelligence.suggested_products.map((product: string, idx: number) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <span className="text-xs text-primary">✓</span>
+                      <span className="text-sm">{product}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {intelligence.relevant_pricing_tiers &&
+            intelligence.relevant_pricing_tiers.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="mb-3 font-semibold">Recommended Pricing Tiers</h3>
+                <ul className="space-y-2">
+                  {intelligence.relevant_pricing_tiers.map((tier: string, idx: number) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <span className="text-xs text-primary">💰</span>
+                      <span className="text-sm">{tier}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+        </div>
+
+        {/* Persona Insights - This is the GOLD */}
+        {intelligence.persona_insights &&
+          intelligence.persona_insights.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">GTM Persona Playbooks</h2>
+              {intelligence.persona_insights.map((persona: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="rounded-lg border-2 border-primary/20 bg-card p-6"
+                >
+                  <div className="mb-4 flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        {persona.persona_role}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Relevance Score: {(persona.relevance_score * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                      {persona.relevance_score >= 0.8 ? "HIGH" : persona.relevance_score >= 0.6 ? "MEDIUM" : "LOW"} PRIORITY
+                    </span>
+                  </div>
+
+                  {/* Why This Matters */}
+                  <div className="mb-4 rounded-lg bg-muted/50 p-4">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Why This Matters
+                    </p>
+                    <p className="mt-1 text-sm">{persona.why_this_matters}</p>
+                  </div>
+
+                  {/* Talking Points */}
+                  {persona.specific_talking_points &&
+                    persona.specific_talking_points.length > 0 && (
+                      <div className="mb-4">
+                        <p className="mb-2 text-sm font-medium">
+                          Specific Talking Points
+                        </p>
+                        <ul className="space-y-2">
+                          {persona.specific_talking_points.map(
+                            (point: string, pidx: number) => (
+                              <li key={pidx} className="flex gap-2">
+                                <span className="text-primary">→</span>
+                                <span className="text-sm">{point}</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                  {/* Suggested Approach */}
+                  {persona.suggested_approach && (
+                    <div className="mb-4">
+                      <p className="mb-2 text-sm font-medium">Suggested Approach</p>
+                      <p className="text-sm text-muted-foreground">
+                        {persona.suggested_approach}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Recommended Products & Metrics */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {persona.recommended_products &&
+                      persona.recommended_products.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-sm font-medium">
+                            Recommended Products
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {persona.recommended_products.map(
+                              (product: string, pidx: number) => (
+                                <span
+                                  key={pidx}
+                                  className="rounded bg-primary/10 px-2 py-1 text-xs"
+                                >
+                                  {product}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    {persona.key_metrics_to_highlight &&
+                      persona.key_metrics_to_highlight.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-sm font-medium">
+                            Key Metrics to Highlight
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {persona.key_metrics_to_highlight.map(
+                              (metric: string, midx: number) => (
+                                <span
+                                  key={midx}
+                                  className="rounded bg-green-100 px-2 py-1 text-xs text-green-800"
+                                >
+                                  {metric}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+        {/* Suggested Email Template */}
+        {intelligence.suggested_email && (
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-4 text-xl font-semibold">Ready-to-Send Email</h2>
+            <div className="rounded bg-muted p-4 font-mono text-sm">
+              <pre className="whitespace-pre-wrap">{intelligence.suggested_email}</pre>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(intelligence.suggested_email);
+                alert("Email template copied to clipboard!");
+              }}
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Copy to Clipboard
+            </button>
+          </div>
+        )}
+
+        {/* General Talking Points */}
         {intelligence.talking_points &&
           intelligence.talking_points.length > 0 && (
             <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-xl font-semibold">Talking Points</h2>
+              <h2 className="mb-4 text-xl font-semibold">General Talking Points</h2>
               <ul className="space-y-2">
                 {intelligence.talking_points.map((point: string, idx: number) => (
                   <li key={idx} className="flex gap-2">

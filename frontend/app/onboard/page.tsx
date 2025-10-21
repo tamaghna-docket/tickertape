@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { ProgressDisplay } from "@/components/ProgressDisplay";
+import { CustomerTicker } from "@/components/CustomerTicker";
 import type { OnboardResult } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -63,8 +64,8 @@ export default function OnboardPage() {
   };
 
   return (
-    <div className="container py-10">
-      <div className="mx-auto max-w-4xl space-y-8">
+    <div className="py-6 px-6">
+      <div className="mx-auto max-w-5xl space-y-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Onboard New Company</h1>
           <p className="text-muted-foreground">
@@ -152,6 +153,11 @@ export default function OnboardPage() {
 
         {result && (
           <div className="space-y-6">
+            {/* Customer Ticker - Shows discovered customers */}
+            {result.enterprise_customers > 0 && (
+              <CustomerTicker saasClientName={result.company_name} />
+            )}
+
             <div className="rounded-lg border border-green-200 bg-green-50 p-6">
               <div className="flex items-start gap-3">
                 <svg
